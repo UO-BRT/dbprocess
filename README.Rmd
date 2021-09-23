@@ -1,26 +1,35 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
 
 # dbprocess
 
 <!-- badges: start -->
-
 [![R-CMD-check](https://github.com/UO-BRT/dbprocess/workflows/R-CMD-check/badge.svg)](https://github.com/UO-BRT/dbprocess/actions)
 <!-- badges: end -->
 
-The purpose of **dbprocess** is to process the raw tables exported from
-[orextdb](https://github.com/UO-BRT/orextdb) in preparation for
-analysis.
+The purpose of **dbprocess** is to process the raw tables exported from [orextdb](https://github.com/UO-BRT/orextdb) in preparation for analysis.
 
 ## Installation
 
 You can install **dbprocess** with the following code:
 
-``` r
+```{r, eval = FALSE}
 # install.packages("remotes") # if not previously installed
 remotes::install_github("UO-BRT/dbprocess")
 ```
 
 ## Example
 
-There actually are no examples yet because the package is brand new\!
+There actually are no examples yet because the package is brand new!
