@@ -21,5 +21,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports: 
     dplyr,
-    tidyr,
-    orextdb
+    tidyr
+Remotes:
+    UO-BRT/orextdb
