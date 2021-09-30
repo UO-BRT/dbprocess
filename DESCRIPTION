@@ -22,6 +22,6 @@ RoxygenNote: 7.1.2
 Imports: 
     dplyr,
     tidyr,
-    orexdb
+    orextdb
 Remotes:
     UO-BRT/orextdb
