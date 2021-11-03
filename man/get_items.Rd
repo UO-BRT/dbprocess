@@ -5,7 +5,7 @@
 \title{Function to pull item level data with student demographics from the live
 ORExt database}
 \usage{
-get_items(grade = NULL, content = NULL, demographics = TRUE)
+get_items(grade = NULL, content = NULL, demographics = TRUE, ...)
 }
 \arguments{
 \item{grade}{Optional argument to return only data from a specific grade.
@@ -21,6 +21,9 @@ will also work).}
 
 \item{demographics}{Logical, defaults to \code{TRUE}. Should student
 demographics be returned with the item-level data.}
+
+\item{...}{Additional arguments passed to \code{\link[orextdb:db_get]{orextdb::db_get()}}. Primarily
+used to specify the database (\code{db}).}
 }
 \value{
 If both \code{grade} and \code{content} are both \code{NULL}, a list

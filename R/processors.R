@@ -12,6 +12,8 @@
 #'   will also work).
 #' @param demographics Logical, defaults to \code{TRUE}. Should student
 #' demographics be returned with the item-level data.
+#' @param ... Additional arguments passed to [orextdb::db_get()]. Primarily 
+#'   used to specify the database (\code{db}).
 #' @return If both \code{grade} and \code{content} are both \code{NULL}, a list
 #'   of all grade/content areas. If one or the other is supplied, a list with
 #'   only the specific grade/content area. If both \code{grade} and
@@ -19,7 +21,7 @@
 #'   area is returned.
 #' @export
 
-get_items <- function(grade = NULL, content = NULL, demographics = TRUE) {
+get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
   if (!is.null(content)) {
 
@@ -40,25 +42,26 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE) {
     form_select <- paste(content, grade, sep = "_G")
   }
 
-  submissions <- db_get("Submissions") |>
+  submissions <- db_get("Submissions", ...) |>
     select(.data$submission_id:.data$exam_id)
 
-  stu <- db_get("Students") |>
+  stu <- db_get("Students", ...) |>
     select(.data$student_id, .data$ssid,
            .data$district_id:.data$dist_stdnt_id,
            .data$gender:grade, .data$idea_elig_code1, .data$idea_elig_code2,
            .data$ethnic_cd, .data$lang_origin:.data$homeschool_flg,
            .data$transition_prgm:.data$alted_flg)
 
-  exm <- db_get("Exams") |>
+  exm <- db_get("Exams", ...) |>
     select(-.data$form)
 
-  ans <- db_get("Answers") |>
+  ans <- db_get("Answers", ...) |>
     select(.data$item_id, .data$answer_id:.data$question_id, .data$item_score)
 
-  itms <- db_get("Items")
+  itms <- db_get("Items", ...)
+  itms$item_id <- as.numeric(itms$item_id)
 
-  tasks <- db_get("Tasks") |>
+  tasks <- db_get("Tasks", ...) |>
     select(.data$task_id, .data$submission_id)
 
   suppressMessages(
