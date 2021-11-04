@@ -182,13 +182,18 @@ create_pattern_frame <- function(item_names) {
 get_pattern_data <- function(name = NULL, grade = NULL, content = NULL,
                              items = NULL) {
   json <- get_test_json(name, grade, content)
+
   if (names(json)[1] == "tasks") {
     item_ids <- pull_item_ids(json)
-    item_ids <- item_ids[item_ids %in% items$item_id_brt]
+    if (!is.null(items)) {
+      item_ids <- item_ids[item_ids %in% items$item_id_brt]
+    }
     return(create_pattern_frame(item_ids))
   }
+
   item_ids <- lapply(json, pull_item_ids)
-  item_ids <- lapply(item_ids, function(x) x[x %in% items$item_id_brt])
+  if (!is.null(items)) {
+    item_ids <- lapply(item_ids, function(x) x[x %in% items$item_id_brt])
+  }
   lapply(item_ids, create_pattern_frame)
 }
-
