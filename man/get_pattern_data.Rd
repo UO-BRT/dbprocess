@@ -5,11 +5,15 @@
 \title{Create patterned synthetic data for any (or all) tests related to all
 possible raw scores}
 \usage{
-get_pattern_data(name = NULL, grade = NULL, content = NULL)
+get_pattern_data(name = NULL, grade = NULL, content = NULL, items = NULL)
 }
 \arguments{
 \item{name}{The name of the test to download (e.g., Science_G5, ELA_G11). If
 used, subsequent arguments to \code{grade} and \code{content} are ignored.}
+
+\item{items}{Optional set of items to be passed to subset the dataframe,
+e.g., to only anchor items. Should be passed as a character vector or,
+if returning all tests, a list of character vectors (one for each test).}
 }
 \value{
 Similar to \code{get_test_json}, if \code{name} or both

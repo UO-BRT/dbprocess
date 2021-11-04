@@ -169,6 +169,9 @@ create_pattern_frame <- function(item_names) {
 #'   possible raw scores
 #' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
 #'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
+#' @param items Optional set of items to be passed to subset the dataframe,
+#'   e.g., to only anchor items. Should be passed as a character vector or,
+#'   if returning all tests, a list of character vectors (one for each test).
 #' @return Similar to \code{get_test_json}, if \code{name} or both
 #'           \code{grade} and \code{content} are supplied, the patterned data
 #'           for just that test is returned. Otherwise, patterned data for
@@ -176,11 +179,16 @@ create_pattern_frame <- function(item_names) {
 #'           such that all possible raw scores are generated. This function
 #'           is primarily used to create the raw to scale score mapping.
 #' @export
-get_pattern_data <- function(name = NULL, grade = NULL, content = NULL) {
+get_pattern_data <- function(name = NULL, grade = NULL, content = NULL,
+                             items = NULL) {
   json <- get_test_json(name, grade, content)
   if (names(json)[1] == "tasks") {
-    return(create_pattern_frame(pull_item_ids(json)))
+    item_ids <- pull_item_ids(json)
+    item_ids <- item_ids[item_ids %in% items$item_id_brt]
+    return(create_pattern_frame(item_ids))
   }
   item_ids <- lapply(json, pull_item_ids)
+  item_ids <- lapply(item_ids, function(x) x[x %in% items$item_id_brt])
   lapply(item_ids, create_pattern_frame)
 }
+
