@@ -24,16 +24,7 @@
 get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
   if (!is.null(content)) {
-
-    if (!tolower(content) %in% c("ela", "math", "science")) {
-      stop('`content` should be one of `"ELA"`, `"Math"`, or `"Science"`',
-           call. = FALSE)
-    }
-
-    content <- switch(tolower(content),
-                      "ela" = "ELA",
-                      "math" = "Math",
-                      "science" = "Science")
+    content <- check_content(content)
   }
 
   if (is.null(grade) & is.null(content)) {
@@ -96,4 +87,100 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   }
 
   out
+}
+
+#' Get the JSON data for any (or all) tests
+#' @inheritParams get_items
+#' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
+#'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
+#' @return If \code{name} or \code{grade} and \code{content} are supplied, the
+#'   json data for just that test is returned. If all are \code{NULL}, then
+#'   a list with the json data for all tests are returned.
+#' @keywords internal
+#' @noRd
+get_test_json <- function(name = NULL, grade = NULL, content = NULL) {
+  base_link <- "https://orext.brtprojects.org/app/test/manifests/"
+
+  all_null <- is.null(name) & is.null(grade) & is.null(content)
+
+  if (!is.null(name) & (!is.null(grade) | !is.null(content))) {
+    warning("Using `name`. Ignoring `grade` and/or `content` arguments")
+  }
+
+  if (!all_null & is.null(name)) {
+    if (is.null(grade) | is.null(content)) {
+      stop("If `name` is not supplied, both `grade` and `content` should " %p%
+           "be supplied, or all should be `NULL`",
+           call. = FALSE)
+    }
+    content <- check_content(content)
+    grade <- check_grade(grade)
+
+    name <- paste0(content, grade)
+  }
+
+  if (!is.null(name)) {
+    link <- paste0(base_link, name, ".json")
+    return(
+      fromJSON(link)
+    )
+  }
+  full_names <- create_all_names()
+  full_links <- paste0(base_link, full_names, ".json")
+
+  out <- lapply(full_links, fromJSON)
+  names(out) <- full_names
+  out
+}
+
+#' Pull the item IDS from the json data
+#' @param json A single JSON file from \code{get_test_json()} 
+#'   (internal dbprocess function)
+#' @keywords internal
+#' @noRd
+pull_item_ids <- function(json) {
+  questions <- json$tasks$questions[[1]]
+  questions$brtItemID[questions$brtItemID != ""]
+}
+
+#' Create a patterned data frame for all possible raw scores
+#' @param item_names The column names (items) from which to generate the
+#'   data frame. These become the column names of the patterned data frame
+#' @keywords internal
+#' @noRd
+create_pattern_frame <- function(item_names) {
+  n <- length(item_names)
+
+  full_zeros <- matrix(rep(0, n), nrow = 1)
+  full_ones <- matrix(rep(1, n), nrow = 1)
+
+  ones <- lapply(seq_len(n - 1), function(x) rep(1, x))
+  zeros <- lapply(rev(seq_len(n - 1)), function(x) rep(0, x))
+
+  m <- Map(function(a, b) matrix(c(a, b), nrow = 1), a = ones, b = zeros)
+  m <- c(list(full_zeros), m, list(full_ones))
+
+  d <- as.data.frame(Reduce(rbind, m))
+  names(d) <- item_names
+  d
+}
+
+#' Create patterned synthetic data for any (or all) tests related to all
+#'   possible raw scores
+#' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
+#'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
+#' @return Similar to \code{get_test_json}, if \code{name} or both
+#'           \code{grade} and \code{content} are supplied, the patterned data
+#'           for just that test is returned. Otherwise, patterned data for
+#'           all tests is returned.The patterned data is synthetic and created
+#'           such that all possible raw scores are generated. This function
+#'           is primarily used to create the raw to scale score mapping.
+#' @export
+get_pattern_data <- function(name = NULL, grade = NULL, content = NULL) {
+  json <- get_test_json(name, grade, content)
+  if (names(json)[1] == "tasks") {
+    return(create_pattern_frame(pull_item_ids(json)))
+  }
+  item_ids <- lapply(json, pull_item_ids)
+  lapply(item_ids, create_pattern_frame)
 }
