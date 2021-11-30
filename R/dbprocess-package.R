@@ -1,5 +1,5 @@
 #' @keywords internal
-#' @importFrom orextdb db_get
+#' @importFrom orextdb db_get check_db
 #' @importFrom stats setNames
 #' @importFrom dplyr select left_join arrange filter .data
 #' @importFrom tidyr pivot_wider
