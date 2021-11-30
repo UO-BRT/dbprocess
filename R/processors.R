@@ -22,6 +22,13 @@
 #' @export
 
 get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
+  call <- as.list(match.call())
+  if (!is.null(call$db)) {
+    year <- gsub("\\D", "", call$db)
+  } else {
+    year <- as.numeric(gsub("^\\d\\d(\\d\\d).+", "\\1", Sys.Date()))
+    year <- paste0(year - 1, year)
+  }
 
   if (!is.null(content)) {
     content <- check_content(content)
@@ -36,12 +43,24 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   submissions <- db_get("Submissions", ...) |>
     select(.data$submission_id:.data$exam_id)
 
-  stu <- db_get("Students", ...) |>
-    select(.data$student_id, .data$ssid,
-           .data$district_id:.data$dist_stdnt_id,
-           .data$gender:grade, .data$idea_elig_code1, .data$idea_elig_code2,
-           .data$ethnic_cd, .data$lang_origin:.data$homeschool_flg,
-           .data$transition_prgm:.data$alted_flg)
+  stu <- db_get("Students", ...)
+  if (year == "1819") {
+    stu <- stu |>
+      select(
+        .data$student_id, .data$ssid,
+        .data$district_id:.data$dist_stdnt_id,
+        .data$gender:grade, .data$idea_elig_code1, .data$idea_elig_code2
+      )
+  } else {
+    stu <- stu |>
+      select(
+        .data$student_id, .data$ssid,
+        .data$district_id:.data$dist_stdnt_id,
+        .data$gender:grade, .data$idea_elig_code1, .data$idea_elig_code2,
+        .data$ethnic_cd, .data$lang_origin:.data$homeschool_flg,
+        .data$transition_prgm:.data$alted_flg
+      )
+  }
 
   exm <- db_get("Exams", ...) |>
     select(-.data$form)
@@ -86,6 +105,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
     out <- out[[1]]
   }
 
+  attributes(out) <- c(attributes(out), "db" = year)
   out
 }
 
