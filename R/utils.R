@@ -33,3 +33,12 @@ create_all_names <- function() {
   sci <- paste0("Science_G", c(5, 8, 11))
   c(ela, math, sci)
 }
+
+# collate the IDs of the students who have too many responses
+# used in a warning mesage
+too_many_resp <- function(l) {
+  ids <- Map(function(nm, vals) {
+    paste0(nm, ":\n", paste0(vals, "\n"), "\n")
+  }, nm = names(l), vals = l)
+  ids
+}
