@@ -41,15 +41,55 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   }
 
   submissions <- db_get("Submissions", ...) |>
-    select(.data$submission_id:.data$exam_id)
+    select(.data$submission_id:.data$exam_id, .data$date_finished, .data$score)
+
+  submissions <- distinct(
+    submissions,
+    .data$student_id,
+    .data$exam_id,
+    .data$date_finished,
+    .keep_all = TRUE
+  )
+
+  check_dupes <- submissions |>
+    add_count(.data$student_id, .data$exam_id) |>
+    filter(.data$n > 1)
+
+  if (nrow(check_dupes) > 0) {
+    dup_keep <- check_dupes |>
+      group_by(.data$student_id, .data$exam_id) |>
+      filter(
+        .data$score == max(.data$score, na.rm = TRUE) &
+          .data$date_finished == max(date_finished, na.rm = TRUE)
+      )
+    suppressMessages(
+      dup_rm <- submissions |>
+        add_count(.data$student_id, .data$exam_id) |>
+        filter(.data$n > 1) |>
+        anti_join(dup_keep)
+    )
+    suppressMessages(
+      submissions <- anti_join(submissions, dup_rm)
+    )
+  }
 
   stu <- db_get("Students", ...)
-  if (year == "1819") {
+
+  if (year == "1718") {
+    stu <- stu |>
+      select(
+        .data$student_id, .data$ssid,
+        .data$district_id:.data$school_id,
+        .data$gender:.data$grade,
+        .data$idea_elig_code1, .data$idea_elig_code2
+      )
+  } else if (year == "1819") {
     stu <- stu |>
       select(
         .data$student_id, .data$ssid,
         .data$district_id:.data$dist_stdnt_id,
-        .data$gender:grade, .data$idea_elig_code1, .data$idea_elig_code2
+        .data$gender:.data$grade, 
+        .data$idea_elig_code1, .data$idea_elig_code2
       )
   } else {
     stu <- stu |>
@@ -72,7 +112,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   itms$item_id <- as.numeric(itms$item_id)
 
   tasks <- db_get("Tasks", ...) |>
-    select(.data$task_id, .data$submission_id)
+    select(.data$task_id, .data$submission_id, .data$task_type)
 
   suppressMessages(
     items <- left_join(submissions, stu) |>
@@ -80,19 +120,59 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
       left_join(tasks) |>
       left_join(ans) |>
       left_join(itms) |>
-      arrange(.data$ssid, .data$title, .data$question_id) |>
-      filter(.data$title != "ORora" &
-               .data$title != "ALT-SEED" &
-               !is.na(.data$item_id_brt)) |>
-      select(.data$ssid:.data$year, .data$item_id_brt, .data$item_score)
+      filter(
+        .data$title != "ORora" &
+        .data$title != "ALT-SEED" &
+        !is.na(.data$item_id_brt)
+      ) |>
+      distinct(
+        .data$submission_id,
+        .data$item_id_brt,
+        .data$date_finished,
+        .data$score,
+        .keep_all = TRUE
+      ) |>
+      arrange(.data$ssid, .data$task_type, .data$question_id) |>
+      select(
+        .data$ssid:.data$idea_elig_code2,
+        .data$task_type, .data$year,
+        .data$item_id_brt,
+        .data$item_score
+      )
   )
 
-  items <- split(items, items$title)
+  items <- split(items, items$task_type)
+
+  counts <- lapply(items, function(x) table(x$ssid))
+  out_of_range <- lapply(counts, function(x) names(x[x > 48]))
+  non_empty <- vapply(out_of_range, function(x) {
+    length(x) > 0
+  }, FUN.VALUE = logical(1))
+
+  if (any(non_empty)) {
+    out <- lapply(out_of_range[non_empty], function(x) {
+      paste0("ssid: ", x, collapse = ", ")
+    })
+
+    warning(
+      "Students with more than 48 item responses detected.",
+      too_many_resp(out),
+      call. = FALSE
+    )
+  }
+  student_with_full_data <- lapply(counts, function(x) names(x[which.max(x)]))
+
+  original_order <- Map(function(d, stu_id) {
+      d[d$ssid == stu_id, "item_id_brt", drop = TRUE]
+    }, d = items, stu_id = student_with_full_data
+  )
 
   by_form <- lapply(items, function(x) {
-    pivot_wider(x,
-                names_from = "item_id_brt",
-                values_from = "item_score")
+      pivot_wider(
+        x,
+        names_from = "item_id_brt",
+        values_from = "item_score"
+      )
   })
 
   if (isFALSE(demographics)) {
@@ -187,6 +267,7 @@ create_pattern_frame <- function(item_names) {
 
 #' Create patterned synthetic data for any (or all) tests related to all
 #'   possible raw scores
+#' @inheritParams get_items
 #' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
 #'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
 #' @param items Optional set of items to be passed to subset the dataframe,
