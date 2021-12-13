@@ -11,6 +11,17 @@ get_pattern_data(name = NULL, grade = NULL, content = NULL, items = NULL)
 \item{name}{The name of the test to download (e.g., Science_G5, ELA_G11). If
 used, subsequent arguments to \code{grade} and \code{content} are ignored.}
 
+\item{grade}{Optional argument to return only data from a specific grade.
+Default is \code{NULL}, in which case all grades are returned in a list,
+where each element of the list is a data frame for the specific test form.}
+
+\item{content}{Optional argument to return only data from a specific content
+area. Default is \code{NULL}, in which case all content areas are returned
+in a list, where each element of the list is a data frame for the specific
+test form. Should be one of \code{"ELA"}, \code{"Math"}, or
+\code{"Science"}, although case does not matter (e.g., \code{"ela"}
+will also work).}
+
 \item{items}{Optional set of items to be passed to subset the dataframe,
 e.g., to only anchor items. Should be passed as a character vector or,
 if returning all tests, a list of character vectors (one for each test).}
