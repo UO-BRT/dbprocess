@@ -42,3 +42,7 @@ too_many_resp <- function(l) {
   }, nm = names(l), vals = l)
   ids
 }
+
+is_item <- function(d) {
+  grepl("^[EMS]\\d", names(d))
+}
