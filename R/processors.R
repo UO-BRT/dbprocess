@@ -22,9 +22,9 @@
 #' @export
 
 get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
-  call <- as.list(match.call())
-  if (!is.null(call$db)) {
-    year <- gsub("\\D", "", call$db)
+  dots <- list(...)
+  if (!is.null(dots$db)) {
+    year <- gsub("\\D", "", dots$db)
   } else {
     year <- as.numeric(gsub("^\\d\\d(\\d\\d).+", "\\1", Sys.Date()))
     year <- paste0(year - 1, year)
@@ -136,11 +136,10 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
       select(
         .data$ssid:.data$idea_elig_code2,
         .data$task_type, .data$year,
-        .data$item_id_brt,
+        .data$question_id, .data$item_id_brt,
         .data$item_score
       )
   )
-
   items <- split(items, items$task_type)
 
   counts <- lapply(items, function(x) table(x$ssid))
@@ -155,17 +154,21 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
     })
 
     warning(
-      "Students with more than 48 item responses detected.",
+      "Students with more than 48 item responses detected.\n\n",
       too_many_resp(out),
       call. = FALSE
     )
   }
-  student_with_full_data <- lapply(counts, function(x) names(x[which.max(x)]))
+  original_order <- lapply(items, function(x) {
+    items <- x[
+      x$question_id %in% seq(1, max(x$question_id)), 
+      c("question_id", "item_id_brt")
+    ]
+    items <- items[order(items$question_id), ]
+    unique(items$item_id_brt)
+  })
 
-  original_order <- Map(function(d, stu_id) {
-      d[d$ssid == stu_id, "item_id_brt", drop = TRUE]
-    }, d = items, stu_id = student_with_full_data
-  )
+  items <- lapply(items, function(x) x[-grep("question_id", names(x))])
 
   by_form <- lapply(items, function(x) {
       pivot_wider(
@@ -175,8 +178,16 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
       )
   })
 
+  by_form <- Map(function(form, nms) {
+    dems <- names(form)[!is_item(form)]
+    form[, c(dems, nms)]
+  },
+  form = by_form,
+  nms = original_order
+  )
+
   if (isFALSE(demographics)) {
-    by_form <- lapply(by_form, function(x) select(x, -.data$ssid:-.data$year))
+    by_form <- lapply(by_form, function(x) x[is_item(x), ])
   }
 
   out <- by_form[grepl(form_select, names(by_form))]
