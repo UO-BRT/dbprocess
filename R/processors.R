@@ -110,6 +110,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
   itms <- db_get("Items", ...)
   itms$item_id <- as.numeric(itms$item_id)
+  itms$item_id_brt <- toupper(itms$item_id_brt)
 
   tasks <- db_get("Tasks", ...) |>
     select(.data$task_id, .data$submission_id, .data$task_type)
@@ -277,13 +278,10 @@ create_pattern_frame <- function(item_names) {
 }
 
 #' Create patterned synthetic data for any (or all) tests related to all
-#'   possible raw scores
+#'   possible raw scores. Uses operational items only (omits field test).
 #' @inheritParams get_items
 #' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
 #'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
-#' @param items Optional set of items to be passed to subset the dataframe,
-#'   e.g., to only anchor items. Should be passed as a character vector or,
-#'   if returning all tests, a list of character vectors (one for each test).
 #' @return Similar to \code{get_test_json}, if \code{name} or both
 #'           \code{grade} and \code{content} are supplied, the patterned data
 #'           for just that test is returned. Otherwise, patterned data for
@@ -292,20 +290,19 @@ create_pattern_frame <- function(item_names) {
 #'           is primarily used to create the raw to scale score mapping.
 #' @export
 get_pattern_data <- function(name = NULL, grade = NULL, content = NULL,
-                             items = NULL) {
+                             db = NULL) {
   json <- get_test_json(name, grade, content)
+  items <- db_get("Items", db = db)
+  op_items <- items[!is.na(items$item_difficulty), "item_id_brt", drop = TRUE]
 
   if (names(json)[1] == "tasks") {
     item_ids <- pull_item_ids(json)
-    if (!is.null(items)) {
-      item_ids <- item_ids[item_ids %in% items$item_id_brt]
-    }
+    items_ids <- intersect(item_ids, op_items)
     return(create_pattern_frame(item_ids))
   }
 
   item_ids <- lapply(json, pull_item_ids)
-  if (!is.null(items)) {
-    item_ids <- lapply(item_ids, function(x) x[x %in% items$item_id_brt])
-  }
+  item_ids <- lapply(item_ids, intersect, op_items)
+  
   lapply(item_ids, create_pattern_frame)
 }
