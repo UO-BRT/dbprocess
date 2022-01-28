@@ -141,6 +141,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
         .data$item_score
       )
   )
+  items <- add_rdg_wri_subscores(items)
   items <- split(items, items$task_type)
 
   counts <- lapply(items, function(x) table(x$ssid))
@@ -199,6 +200,19 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
   attributes(out) <- c(attributes(out), "db" = year)
   out
+}
+
+#' Add reading and writing subscores to the items data file
+add_rdg_wri_subscores <- function(items) {
+  ela <- items[grepl("^ELA", items$task_type), ]
+
+  read <- ela[grepl("RF|RI|RL", ela$item_id_brt), ]
+  read$task_type <- gsub("^ELA_", "Rdg_", read$task_type)
+
+  write <- ela[grepl("WR", ela$item_id_brt), ]
+  write$task_type <- gsub("^ELA_", "Wri_", write$task_type)
+
+  rbind(ela, read, write, items[!grepl("^ELA", items$task_type), ])
 }
 
 #' Get the JSON data for any (or all) tests
