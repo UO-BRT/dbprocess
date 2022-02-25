@@ -12,7 +12,7 @@
 #'   will also work).
 #' @param demographics Logical, defaults to \code{TRUE}. Should student
 #' demographics be returned with the item-level data.
-#' @param ... Additional arguments passed to [orextdb::db_get()]. Primarily 
+#' @param ... Additional arguments passed to [orextdb::db_get()]. Primarily
 #'   used to specify the database (\code{db}).
 #' @return If both \code{grade} and \code{content} are both \code{NULL}, a list
 #'   of all grade/content areas. If one or the other is supplied, a list with
@@ -22,10 +22,15 @@
 #' @export
 
 get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
+
+  # Note for Chris: anytime `:` is used within column selection, change to
+  # all column names (as we did for the submissions)
+
   dots <- list(...)
   if (!is.null(dots$db)) {
     year <- gsub("\\D", "", dots$db)
   } else {
+    # Chris to update this section to however we handle this same thing with orextdb
     year <- as.numeric(gsub("^\\d\\d(\\d\\d).+", "\\1", Sys.Date()))
     year <- paste0(year - 1, year)
   }
@@ -41,7 +46,13 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   }
 
   submissions <- db_get("Submissions", ...) |>
-    select(.data$submission_id:.data$exam_id, .data$date_finished, .data$score)
+    select(
+      .data$submission_id,
+      .data$student_id,
+      .data$exam_id,
+      .data$date_finished,
+      .data$score
+    )
 
   submissions <- distinct(
     submissions,
@@ -55,13 +66,15 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
     add_count(.data$student_id, .data$exam_id) |>
     filter(.data$n > 1)
 
+  # probs should be a function on its own
+  # arrange by date first, then if date is the same, take max score
+  # (verify the above is correct)
   if (nrow(check_dupes) > 0) {
     dup_keep <- check_dupes |>
       group_by(.data$student_id, .data$exam_id) |>
-      filter(
-        .data$score == max(.data$score, na.rm = TRUE) &
-          .data$date_finished == max(date_finished, na.rm = TRUE)
-      )
+      arrange(desc(.data$date_finished), desc(.data$score)) |>
+      slice(1)
+
     suppressMessages(
       dup_rm <- submissions |>
         add_count(.data$student_id, .data$exam_id) |>
@@ -75,6 +88,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
   stu <- db_get("Students", ...)
 
+  # Chris to clean up (wrap it in a function)
   if (year == "1718") {
     stu <- stu |>
       select(
@@ -88,7 +102,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
       select(
         .data$student_id, .data$ssid,
         .data$district_id:.data$dist_stdnt_id,
-        .data$gender:.data$grade, 
+        .data$gender:.data$grade,
         .data$idea_elig_code1, .data$idea_elig_code2
       )
   } else {
@@ -122,8 +136,8 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
       left_join(ans) |>
       left_join(itms) |>
       filter(
-        .data$title != "ORora" &
-        .data$title != "ALT-SEED" &
+        .data$title != "ORora" & # life skills assessment
+        .data$title != "ALT-SEED" & # survey on feelings of school belonging etc.
         !is.na(.data$item_id_brt)
       ) |>
       distinct(
@@ -144,6 +158,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   items <- add_rdg_wri_subscores(items)
   items <- split(items, items$task_type)
 
+  # could be wrapped in a checking function
   counts <- lapply(items, function(x) table(x$ssid))
   out_of_range <- lapply(counts, function(x) names(x[x > 48]))
   non_empty <- vapply(out_of_range, function(x) {
@@ -163,7 +178,7 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   }
   original_order <- lapply(items, function(x) {
     items <- x[
-      x$question_id %in% seq(1, max(x$question_id)), 
+      x$question_id %in% seq(1, max(x$question_id)),
       c("question_id", "item_id_brt")
     ]
     items <- items[order(items$question_id), ]
@@ -203,6 +218,8 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 }
 
 #' Add reading and writing subscores to the items data file
+#' @keywords Internal
+#' @noRd
 add_rdg_wri_subscores <- function(items) {
   ela <- items[grepl("^ELA", items$task_type), ]
 
@@ -260,7 +277,7 @@ get_test_json <- function(name = NULL, grade = NULL, content = NULL) {
 }
 
 #' Pull the item IDS from the json data
-#' @param json A single JSON file from \code{get_test_json()} 
+#' @param json A single JSON file from \code{get_test_json()}
 #'   (internal dbprocess function)
 #' @keywords internal
 #' @noRd
@@ -296,6 +313,7 @@ create_pattern_frame <- function(item_names) {
 #' @inheritParams get_items
 #' @param name The name of the test to download (e.g., Science_G5, ELA_G11). If
 #'   used, subsequent arguments to \code{grade} and \code{content} are ignored.
+#' @param db The db to get the pattern data from.
 #' @return Similar to \code{get_test_json}, if \code{name} or both
 #'           \code{grade} and \code{content} are supplied, the patterned data
 #'           for just that test is returned. Otherwise, patterned data for
@@ -317,6 +335,6 @@ get_pattern_data <- function(name = NULL, grade = NULL, content = NULL,
 
   item_ids <- lapply(json, pull_item_ids)
   item_ids <- lapply(item_ids, intersect, op_items)
-  
+
   lapply(item_ids, create_pattern_frame)
 }
