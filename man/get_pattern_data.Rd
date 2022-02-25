@@ -3,9 +3,9 @@
 \name{get_pattern_data}
 \alias{get_pattern_data}
 \title{Create patterned synthetic data for any (or all) tests related to all
-possible raw scores}
+possible raw scores. Uses operational items only (omits field test).}
 \usage{
-get_pattern_data(name = NULL, grade = NULL, content = NULL, items = NULL)
+get_pattern_data(name = NULL, grade = NULL, content = NULL, db = NULL)
 }
 \arguments{
 \item{name}{The name of the test to download (e.g., Science_G5, ELA_G11). If
@@ -22,9 +22,7 @@ test form. Should be one of \code{"ELA"}, \code{"Math"}, or
 \code{"Science"}, although case does not matter (e.g., \code{"ela"}
 will also work).}
 
-\item{items}{Optional set of items to be passed to subset the dataframe,
-e.g., to only anchor items. Should be passed as a character vector or,
-if returning all tests, a list of character vectors (one for each test).}
+\item{db}{The db to get the pattern data from.}
 }
 \value{
 Similar to \code{get_test_json}, if \code{name} or both
@@ -36,5 +34,5 @@ is primarily used to create the raw to scale score mapping.
 }
 \description{
 Create patterned synthetic data for any (or all) tests related to all
-possible raw scores
+possible raw scores. Uses operational items only (omits field test).
 }
