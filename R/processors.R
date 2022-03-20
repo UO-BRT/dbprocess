@@ -23,16 +23,11 @@
 
 get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
 
-  # Note for Chris: anytime `:` is used within column selection, change to
-  # all column names (as we did for the submissions)
-
   dots <- list(...)
   if (!is.null(dots$db)) {
     year <- gsub("\\D", "", dots$db)
   } else {
-    # Chris to update this section to however we handle this same thing with orextdb
-    year <- as.numeric(gsub("^\\d\\d(\\d\\d).+", "\\1", Sys.Date()))
-    year <- paste0(year - 1, year)
+    year <- current_db()
   }
 
   if (!is.null(content)) {
@@ -44,6 +39,15 @@ get_items <- function(grade = NULL, content = NULL, demographics = TRUE, ...) {
   } else {
     form_select <- paste(content, grade, sep = "_G")
   }
+
+  # Note for Chris: anytime `:` is used within column selection, change to
+  # all column names (as we did for the submissions)
+  base_pipe_installed <- check_base_pipe()
+  if(!base_pipe_installed) {
+    stop('Base pipe not installed')
+  }
+
+
 
   submissions <- db_get("Submissions", ...) |>
     select(
