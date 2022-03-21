@@ -67,12 +67,14 @@ create_all_names <- function() {
 
 # collate the IDs of the students who have too many responses
 # used in a warning message
-too_many_resp <- function(l) {
-  ids <- Map(function(nm, vals) {
-    paste0(nm, ":\n", paste0(vals, "\n"), "\n")
-  }, nm = names(l), vals = l)
-  ids
-}
+too_many_resp <-
+  function(l) {
+    ids <- Map(function(nm, vals) {
+      paste0(nm, ":\n", paste0(vals, "\n"), "\n")
+      }, nm = names(l), vals = l)
+    ids
+    }
+
 
 is_item <- function(d) {
   grepl("^[EMS]\\d", names(d))
