@@ -50,7 +50,7 @@ get_items <-
     stop('Base pipe not installed. Please use R version >= 4.1')
   }
 
-  submissions <- db_get_submissions(remove_duplicates = TRUE)
+  submissions <- db_get_submissions(remove_duplicates = TRUE, ...)
 
   stu <- db_get("Students", ...)
 

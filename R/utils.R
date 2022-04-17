@@ -3,7 +3,6 @@
 #' Infix function to paste long strings together a little easier
 #'
 #' @keywords internal
-#' @noRd
 #' @param lhs = character vector to paste on left
 #' @param rhs = character vector to paste on right
 `%p%` <- function(lhs, rhs) {
@@ -18,7 +17,6 @@
 #' Used in case the db is not passed to a function
 #' Determines the current db based on the system date
 #' Creates a string with the name of the db
-#' @noRd
 #' @keywords internal
 current_db <- function() {
   current_month <- as.numeric(format(Sys.Date(),"%m"))
