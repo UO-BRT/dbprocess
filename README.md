@@ -12,15 +12,6 @@ The purpose of **dbprocess** is to process the raw tables exported from
 [orextdb](https://github.com/UO-BRT/orextdb) in preparation for
 analysis.
 
-## Installation
-
-You can install **dbprocess** with the following code:
-
-``` r
-# install.packages("remotes") # if not previously installed
-remotes::install_github("UO-BRT/dbprocess")
-```
-
-## Example
-
-There actually are no examples yet because the package is brand new\!
+This package is meant to be used in conjunction with two other packages,
+please see [`{exirt}`](https://github.com/UO-BRT/exirt) for an
+explanation of the three-package pipeline.
