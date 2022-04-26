@@ -103,9 +103,8 @@ format_student_table <-
   return(student_table)
 }
 
-# internal function to format the items table from other tables
+#' internal function to format the items table from other tables. see \code{get_items()} in processors.R
 #' @keywords internal
-#' @noRd
 
 get_items_table <-
   function(
@@ -167,8 +166,8 @@ get_items_table <-
 # perhaps different by year
 
 #' @keywords internal
-#' @noRd
 #' @param items_list = list of all item responses for all students
+#' @noRd
  check_num_responses <-
    function(items_list){
 

@@ -121,7 +121,9 @@ get_items <-
 
 #' Add reading and writing subscores to the items data file
 #' @keywords Internal
-#' @noRd
+#' @param items items table from \code{get_items_table()}
+#' @return a data frame of item scores with rdg and writing subscores added
+
 add_rdg_wri_subscores <- function(items) {
   ela <- items[grepl("^ELA", items$task_type), ]
 
@@ -142,7 +144,6 @@ add_rdg_wri_subscores <- function(items) {
 #'   json data for just that test is returned. If all are \code{NULL}, then
 #'   a list with the json data for all tests are returned.
 #' @keywords internal
-#' @noRd
 get_test_json <- function(name = NULL, grade = NULL, content = NULL) {
   base_link <- "https://orext.brtprojects.org/app/test/manifests/"
 
@@ -182,7 +183,8 @@ get_test_json <- function(name = NULL, grade = NULL, content = NULL) {
 #' @param json A single JSON file from \code{get_test_json()}
 #'   (internal dbprocess function)
 #' @keywords internal
-#' @noRd
+#' @return a character vector of item ids
+
 pull_item_ids <- function(json) {
   questions <- json$tasks$questions[[1]]
   questions$brtItemID[questions$brtItemID != ""]
@@ -192,7 +194,8 @@ pull_item_ids <- function(json) {
 #' @param item_names The column names (items) from which to generate the
 #'   data frame. These become the column names of the patterned data frame
 #' @keywords internal
-#' @noRd
+#' @return data frame of all possible combinations of raw scores
+
 create_pattern_frame <- function(item_names) {
   n <- length(item_names)
 
